@@ -2,6 +2,8 @@ from flask import Flask
 from flask_cors import CORS
 from flask import Flask, request
 import hashlib
+import jwt_utils
+
 
 app = Flask(__name__)
 CORS(app)
@@ -17,7 +19,8 @@ def login():
     tried_password = payload['password'].encode('UTF-8')
     hashed = hashlib.md5(tried_password).digest()
     if hashed == b'\xd8\x17\x06PG\x92\x93\xc1.\x02\x01\xe5\xfd\xf4_@' :
-        return 'Ok', 200
+
+        return {'access_token': jwt_utils.build_token()}, 200
     return 'Unauthorized', 401
    
 
