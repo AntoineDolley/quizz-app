@@ -1,12 +1,10 @@
 from typing import List, Dict, Any
+from database import insert_question_to_db
 
-class Question:
-    
-    _id_counter = 1
-    
+class Question: 
     def __init__(self, text: str, title: str, image: str = None, position: int = None, possibleAnswers: List[str] = None):
-        self.id = Question._id_counter
-        Question._id_counter += 1
+        # self.id = Question._id_counter
+        # Question._id_counter += 1
         self.text = text
         self.title = title
         self.image = image
@@ -15,7 +13,7 @@ class Question:
 
     def to_dict(self):
         return {
-            "id" : self.id,
+            # "id" : self.id,
             "text": self.text,
             "title": self.title,
             "image": self.image,
@@ -32,3 +30,6 @@ class Question:
             possibleAnswers=data.get("possibleAnswers"),
             id=data.get("id")
         )
+        
+    def save(self):
+        insert_question_to_db(self)
