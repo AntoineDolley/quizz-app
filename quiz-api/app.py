@@ -41,7 +41,8 @@ def rebuild_database_route():
 
 @app.route('/quiz-info', methods=['GET'])
 def GetQuizInfo():
-	return {"size": 0, "scores": []}, 200
+    size = get_quiz_info()[0]["size"]
+    return {"size": size, "scores": []}, 200
 
 
 @app.route('/questions', methods=['POST'])

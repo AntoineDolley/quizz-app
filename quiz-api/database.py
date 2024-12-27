@@ -41,6 +41,22 @@ def rebuild_database():  # Reconstruire/Écraser la table dans la base de donné
         connection.close()
 
 
+def get_quiz_info():
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute("begin")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM Question")
+        size = cursor.fetchone()[0]
+        return {"size": size, "scores": []}, 200
+    
+    except Exception as e:
+        print(f"Erreur lors de la récupération du nombre de questions : {e}")
+        return {"error": "Erreur du serveur"}, 500
+    finally:
+        connection.close()
+
+
 def get_question_by_id(question_id):
     connection = get_db_connection()
     cursor = connection.cursor()
