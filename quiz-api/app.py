@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask import Flask, request, jsonify
 import hashlib
-import jwt_utils
+import jwt_utils as jwt_utils
 from questions import *
 from database import *
 from auth_utils import require_auth_admin

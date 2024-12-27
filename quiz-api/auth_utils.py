@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from functools import wraps
-import jwt_utils
+import jwt_utils as jwt_utils
 
 def require_auth_admin(f):
     @wraps(f)

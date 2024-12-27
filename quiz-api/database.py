@@ -1,5 +1,6 @@
 import sqlite3
 import json
+from position_utils import *
 import os
 
 # path = os.path.abspath("quizdb.db")
@@ -97,6 +98,11 @@ def insert_question_to_db(question):
     
     try:
         cursor.execute("begin")
+        
+        # On vérifie si une question existe déjà à la position spécifiée. Si c'est le cas, on donne la priorité à la dernière question
+        # renseignée et on décale toutes les autres 
+        check_position(cursor, question)
+        
         possible_answers_json = json.dumps(question.possibleAnswers)
         
         cursor.execute("""
@@ -120,7 +126,15 @@ def delete_question_by_id(question_id):
     cursor = connection.cursor()
     try:
         cursor.execute("begin")
+
+        
+        cursor.execute("SELECT position FROM Question WHERE id = ?", (question_id,))
+        position = cursor.fetchone()
+        if position:
+            cursor.execute("UPDATE Question SET position = position - 1 WHERE position > ?", (position[0],))
+        
         cursor.execute("DELETE FROM Question WHERE id = ?", (question_id,))
+        
         cursor.execute("commit")
         return True
     except Exception as e:
@@ -131,15 +145,32 @@ def delete_question_by_id(question_id):
         connection.close()
         
 
+
 def update_question_by_id(question_id, data):
     connection = get_db_connection()
     cursor = connection.cursor()
+    cursor.execute("begin")
+    
+    new_pos = data.get("position")
+    if new_pos:
+        cursor.execute("SELECT position FROM Question WHERE id = ?", (question_id,))
+        current_pos = cursor.fetchone()
+
+        if not current_pos:
+            print(f"Question avec id {question_id} introuvable.")
+            cursor.execute("ROLLBACK")
+            return False
+
+        current_pos = current_pos[0]
+
+        if new_pos != current_pos:
+            reorganize_positions(cursor, current_pos, new_pos)
+    
     try:
-        # Génère dynamiquement les colonnes à mettre à jour
+        # On génère les colonnes à modifier
         columns = []
         values = []
 
-        # Ajoute uniquement les champs fournis dans `data`
         if "text" in data:
             columns.append("text = ?")
             values.append(data["text"])
@@ -159,10 +190,10 @@ def update_question_by_id(question_id, data):
         if not columns:
             return False  # Aucun champ à mettre à jour
 
-        # Construire la requête SQL
+        # On construit la requête SQL
         values.append(question_id)
         query = f"UPDATE Question SET {', '.join(columns)} WHERE id = ?"
-        cursor.execute("BEGIN")
+        
         cursor.execute(query, values)
         connection.commit()
 
@@ -173,7 +204,6 @@ def update_question_by_id(question_id, data):
         return False
     finally:
         connection.close()
-
 
 
 def delete_all_questions():
