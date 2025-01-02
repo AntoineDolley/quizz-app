@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 import hashlib
 import jwt_utils as jwt_utils
 from questions import *
+from participants import *
 from database import *
 from auth_utils import require_auth_admin
 
@@ -42,7 +43,9 @@ def rebuild_database_route():
 @app.route('/quiz-info', methods=['GET'])
 def GetQuizInfo():
     size = get_quiz_info()[0]["size"]
-    return {"size": size, "scores": []}, 200
+    scores = get_quiz_info()[0]["scores"]
+    return {"size": size, "scores": scores}, 200
+
 
 
 @app.route('/questions', methods=['POST'])
@@ -160,12 +163,54 @@ def delete_all_questions_route():
         return jsonify({"error": str(e)}), 500
     
 
-# Suppression de toutes les participations
-# A faire lorsque l'on gerera les participations
+
+
+
+@app.route('/participations', methods=['POST'])
+def postParticipant():
+    
+    data = request.get_json()  # Récupération des données JSON
+    
+    if not data or "playerName" not in data:
+        return {"error": "Nom Manquant"}, 400
+
+
+    try:
+        # Charger le participant
+        participant = Participant.from_dict(data)
+
+        # Récupérer les réponses correctes depuis la base de données
+        correct_answers = get_correct_answers()  # On récupère le tableau correspondant aux réponses correctes
+        # Pour chaque ajout de participant, on doit donc récupérer les réponses correctes, ce qui n'est pas forcemment opimal, mais dans
+        # notre cas, étant donné que l'on ne dépassera pas les 10 participants, ce n'est pas très grave
+
+        participant.save(correct_answers)
+    
+        return participant.to_dict(), 200
+    
+    except ValueError as ve:
+        return {"error": str(ve)}, 400
+    
+    except Exception as e:
+        print(f"Erreur dans add_participant : {e}")
+        return {"error": "Erreur du serveur"}, 500
+
+
+
+
 @app.route('/participations/all', methods=['DELETE'])
 @require_auth_admin
 def delete_all_participations_route():
-    return "Ok", 204
+    try:
+        success = delete_all_participations()
+        if success:
+            return jsonify({"message": "Toutes les participations ont été supprimées avec succès"}), 204
+        return jsonify({"error": "Erreur lors de la suppression des participations (route)"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 
 
 if __name__ == "__main__":

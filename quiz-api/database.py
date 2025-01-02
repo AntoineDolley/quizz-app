@@ -21,6 +21,7 @@ def rebuild_database():  # Reconstruire/Écraser la table dans la base de donné
     try:
         cursor.execute("begin")
         cursor.execute("DROP TABLE IF EXISTS Question;")   # Supprimer la table si elle existe déjà
+        cursor.execute("DROP TABLE IF EXISTS Participant;")
         
         cursor.execute("""
             CREATE TABLE Question (
@@ -32,8 +33,17 @@ def rebuild_database():  # Reconstruire/Écraser la table dans la base de donné
                 possibleAnswers TEXT
             );
         """)
+        
+        cursor.execute("""
+            CREATE TABLE Participant (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                playerName TEXT NOT NULL,
+                answers TEXT,
+                score INTEGER
+            );
+        """)
+        
         connection.commit()
-        print("Base de données reconstruite avec succès.")
     except Exception as e:
         print(f"Erreur lors de la recréation de la base de données : {e}")
         connection.rollback()
@@ -48,13 +58,25 @@ def get_quiz_info():
     try:
         cursor.execute("SELECT COUNT(*) FROM Question")
         size = cursor.fetchone()[0]
-        return {"size": size, "scores": []}, 200
+        
+        cursor.execute("""
+            SELECT playerName, score
+            FROM Participant
+            ORDER BY score DESC
+        """)
+        scores = [{"playerName": row[0], "score": row[1]} for row in cursor.fetchall()]
+        
+        return {"size": size, "scores": scores}, 200
     
     except Exception as e:
         print(f"Erreur lors de la récupération du nombre de questions : {e}")
         return {"error": "Erreur du serveur"}, 500
     finally:
         connection.close()
+        
+
+
+
 
 
 def get_question_by_id(question_id):
@@ -237,3 +259,73 @@ def delete_all_questions():
     finally:
         connection.close()
         
+
+
+def get_correct_answers():
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT possibleAnswers FROM Question")
+        return [
+            index + 1
+            for row in cursor.fetchall()
+            for index, answer in enumerate(json.loads(row[0]))
+            if answer["isCorrect"]
+        ]
+    except Exception as e:
+        print(f"Erreur lors de la récupération des réponses correctes : {e}")
+        raise
+    finally:
+        connection.close()
+
+        
+def insert_participant_to_db(participant):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    
+    try:
+        cursor.execute("BEGIN")
+
+        # Sérialiser les réponses en JSON
+        answers_json = json.dumps(participant.answers)
+        
+        # Insérer le participant dans la base
+        cursor.execute("""
+            INSERT INTO Participant (playerName, answers, score)
+            VALUES (?, ?, ?)
+        """, (participant.playerName, answers_json, participant.score))
+        
+        cursor.execute("COMMIT")
+        return True
+        
+    except ValueError as ve:
+        cursor.execute("ROLLBACK")
+        print(f"Erreur : {ve}")
+        return False
+    except Exception as e:
+        cursor.execute("ROLLBACK")
+        print(f"Erreur d'insertion : {e}")
+        return False
+    finally:
+        connection.close()
+
+        
+        
+        
+        
+        
+
+def delete_all_participations():
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute("begin")
+        cursor.execute("DELETE FROM Participant;")
+        cursor.execute("commit")
+        return True
+    except Exception as e:
+        cursor.execute("rollback")
+        print(f"Erreur lors de la suppression de toutes les paticipations (DB): {e}")
+        return False
+    finally:
+        connection.close()
