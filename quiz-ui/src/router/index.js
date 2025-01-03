@@ -1,14 +1,21 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import HomePage from '../views/HomePage.vue';
+import NewQuizPage from '../views/NewQuizPage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      name: 'HomePage',
+      component: HomePage,
     },
+    {
+      path: '/new-quiz',
+      name: 'new-quiz',
+      component: NewQuizPage,
+    },
+
     {
       path: '/about',
       name: 'about',
@@ -18,6 +25,6 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
   ],
-})
+});
 
-export default router
+export default router;
