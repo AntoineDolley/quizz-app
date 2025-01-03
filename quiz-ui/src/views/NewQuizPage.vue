@@ -1,6 +1,25 @@
+<script setup>
+import { ref } from 'vue';
+
+const username = ref('');
+</script>
+
 <template>
-  <div class="quiz">
-    <h1>This is an about page</h1>
+  <div class="form-container">
+    <p>Saisissez votre nom :</p>
+    <form>
+      <div class="mb-3">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Username"
+          aria-label="Username"
+          v-model="username"
+        />
+      </div>
+      <p>{{ username }}</p>
+      <button type="button" class="btn btn-outline-danger">GO!</button>
+    </form>
   </div>
 </template>
 
